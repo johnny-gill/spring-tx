@@ -50,7 +50,7 @@ public class InternalCallV1Test {
         void external() {
             log.info("call external");
             printTxInfo();
-            internal();
+            internal(); //this.internal() 이라 프록시 호출이 아님..
         }
 
         private static void printTxInfo() {
