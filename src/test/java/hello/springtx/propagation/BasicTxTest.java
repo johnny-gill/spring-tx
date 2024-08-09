@@ -1,6 +1,7 @@
 package hello.springtx.propagation;
 
 import lombok.extern.slf4j.Slf4j;
+import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -8,7 +9,9 @@ import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.jdbc.datasource.DataSourceTransactionManager;
 import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.TransactionStatus;
+import org.springframework.transaction.UnexpectedRollbackException;
 import org.springframework.transaction.interceptor.DefaultTransactionAttribute;
 
 import javax.sql.DataSource;
@@ -104,4 +107,39 @@ public class BasicTxTest {
         txManager.rollback(outerTxStatus);
     }
 
+
+    @Test
+    void inner_rollback() {
+        log.info("start outer transaction");
+        TransactionStatus outerTxStatus = txManager.getTransaction(new DefaultTransactionAttribute());
+
+        log.info("start inner transaction");
+        TransactionStatus innerTxStatus = txManager.getTransaction(new DefaultTransactionAttribute());
+
+        log.info("rollback inner transaction");
+        txManager.rollback(innerTxStatus); // marking existing transaction as rollback-only
+
+        log.info("commit outer transaction");
+        Assertions.assertThatThrownBy(() -> txManager.commit(outerTxStatus)).isInstanceOf(UnexpectedRollbackException.class);
+    }
+
+    @Test
+    void inner_rollback_requires_new() {
+        log.info("start outer tx");
+        TransactionStatus outerTxStatus = txManager.getTransaction((new DefaultTransactionAttribute()));
+        log.info("outerTxStatus.isNewTransaction()={}", outerTxStatus.isNewTransaction());
+
+        log.info("start inner tx");
+        DefaultTransactionAttribute definition = new DefaultTransactionAttribute(); //  TransactionDefinition 상속
+        definition.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+        TransactionStatus innerTxStatus = txManager.getTransaction(definition);
+        log.info("innerTxStatus.isNewTransaction()={}", innerTxStatus.isNewTransaction());
+
+        log.info("rollback inner tx");
+        txManager.rollback(innerTxStatus);
+
+        log.info("commit outer tx");
+        txManager.commit(outerTxStatus);
+
+    }
 }
