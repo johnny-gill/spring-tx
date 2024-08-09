@@ -64,4 +64,23 @@ public class MemberServiceTest {
         // member는 커밋이 되고 log는 롤백이 됐음. 서로 데이터가 맞지 않는 문제 발생 ====> 하나의 트랜잭션으로 묶는다
     }
 
+    /**
+     * MemberService : tx on
+     * MemberRepository : tx off
+     * LogRepository : tx off
+     *
+     * Creating new transaction with name [hello.springtx.propagation.MemberService.joinV1]
+     */
+    @Test
+    public void transaction_in_service_success() {
+        // given
+        String username = "test";
+
+        // when
+        memberService.joinV1(username);
+
+        // then
+        assertTrue(memberRepository.findByUsername(username).isPresent());
+        assertTrue(logRepository.findByMessage(username).isPresent());
+    }
 }
