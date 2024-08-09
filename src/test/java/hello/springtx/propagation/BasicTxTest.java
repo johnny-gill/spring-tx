@@ -87,4 +87,21 @@ public class BasicTxTest {
         log.info("commit outer transaction");
         txManager.commit(outerTxStatus);
     }
+
+
+    @Test
+    void outer_rollback() {
+        log.info("start outer transaction");
+        TransactionStatus outerTxStatus = txManager.getTransaction(new DefaultTransactionAttribute());
+
+        log.info("start inner transaction");
+        TransactionStatus innerTxStatus = txManager.getTransaction(new DefaultTransactionAttribute());
+
+        log.info("commit inner transaction");
+        txManager.commit(innerTxStatus);
+
+        log.info("rollback outer transaction");
+        txManager.rollback(outerTxStatus);
+    }
+
 }
