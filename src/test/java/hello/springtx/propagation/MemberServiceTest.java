@@ -83,4 +83,22 @@ public class MemberServiceTest {
         assertTrue(memberRepository.findByUsername(username).isPresent());
         assertTrue(logRepository.findByMessage(username).isPresent());
     }
+
+    /**
+     * MemberService : tx on
+     * MemberRepository : tx off
+     * LogRepository : tx off - exception
+     */
+    @Test
+    public void test() {
+        // given
+        String username = "로그예외";
+
+        // when
+        assertThatThrownBy(() -> memberService.joinV1(username)).isInstanceOf(RuntimeException.class);
+
+        // then
+        assertFalse(memberRepository.findByUsername(username).isPresent()); // rollback
+        assertTrue(logRepository.findByMessage(username).isEmpty()); // rollback
+    }
 }
