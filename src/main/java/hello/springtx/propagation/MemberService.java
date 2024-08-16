@@ -27,20 +27,25 @@ public class MemberService {
         log.info("end logRepository.save");
     }
 
+    @Transactional
     public void joinV2(String username) {
+        log.info("#####start memberService");
+
         Member member = new Member(username);
         Log logMessage = new Log(username);
 
-        log.info("start memberRepository.save");
+        log.info("#####start memberRepository.save");
         memberRepository.save(member);
-        log.info("end memberRepository.save");
+        log.info("#####end memberRepository.save");
 
-        log.info("start logRepository.save");
+        log.info("#####start logRepository.save");
         try {
             logRepository.save(logMessage);
         } catch (RuntimeException e) {
             log.info("log 저장 실패냥. {}", logMessage.getMessage());
         }
-        log.info("end logRepository.save");
+        log.info("#####end logRepository.save");
+
+        log.info("#####end memberService");
     }
 }
