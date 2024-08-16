@@ -187,4 +187,28 @@ public class MemberServiceTest {
         assertTrue(memberRepository.findByUsername(username).isEmpty());
         assertTrue(logRepository.findByMessage(username).isEmpty());
     }
+
+    /**
+     * MemberService : tx on
+     * MemberRepository : tx on
+     * LogRepository : tx on, ex
+     *
+     * Purpose : 로그 저장은 실패하더라도 회원 정보는 저장시키고 싶다!!!
+     *
+     * LogRepository만 트랜잭션을 분리해본다.
+     * 트랜잭션 분리를 위해 REQUIRES_NEW 설정
+     * Suspending current transaction, creating new transaction with name [hello.springtx.propagation.LogRepository.save]
+     */
+    @Test
+    public void test2() {
+        // given
+        String username = "로그예외";
+
+        // when
+        memberService.joinV2(username);
+
+        // then
+        assertTrue(memberRepository.findByUsername(username).isPresent());
+        assertTrue(logRepository.findByMessage(username).isEmpty());
+    }
 }
