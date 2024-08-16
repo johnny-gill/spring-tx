@@ -1,13 +1,16 @@
 package hello.springtx.propagation;
 
 import lombok.extern.slf4j.Slf4j;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
+import org.springframework.aop.support.AopUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
-import static org.assertj.core.api.Assertions.*;
-import static org.junit.jupiter.api.Assertions.*;
+import java.lang.reflect.Proxy;
+
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @Slf4j
 @SpringBootTest
@@ -67,6 +70,28 @@ public class MemberServiceTest {
     /**
      * MemberService : tx on
      * MemberRepository : tx off
+     * LogRepository : tx off - exception
+     */
+    @Test
+    public void on_off_off_ex() {
+        // given
+        String username = "로그예외";
+
+        // when
+        assertThatThrownBy(() -> memberService.joinV1(username)).isInstanceOf(RuntimeException.class);
+
+        System.out.println(Proxy.isProxyClass(memberService.getClass()));
+        System.out.println(Proxy.isProxyClass(memberRepository.getClass()));
+        System.out.println(Proxy.isProxyClass(logRepository.getClass()));
+
+        // then
+        assertFalse(memberRepository.findByUsername(username).isPresent()); // rollback
+        assertTrue(logRepository.findByMessage(username).isEmpty()); // rollback
+    }
+
+    /**
+     * MemberService : tx on
+     * MemberRepository : tx off
      * LogRepository : tx off
      *
      * Creating new transaction with name [hello.springtx.propagation.MemberService.joinV1]
@@ -84,13 +109,32 @@ public class MemberServiceTest {
         assertTrue(logRepository.findByMessage(username).isPresent());
     }
 
+
     /**
-     * MemberService : tx on
-     * MemberRepository : tx off
-     * LogRepository : tx off - exception
+     * MemberService : tx on ====> 여기서만 트랜잭션 생성된다.
+     * MemberRepository : tx on
+     * LogRepository : tx on
      */
     @Test
-    public void test() {
+    public void on_on_on() {
+        // given
+        String username = "test";
+
+        // when
+        memberService.joinV1(username);
+
+        // then
+        assertTrue(memberRepository.findByUsername(username).isPresent());
+        assertTrue(logRepository.findByMessage(username).isPresent());
+    }
+
+    /**
+     * MemberService : tx on
+     * MemberRepository : tx on
+     * LogRepository : tx on, ex
+     */
+    @Test
+    public void on_on_onex() {
         // given
         String username = "로그예외";
 
@@ -98,7 +142,7 @@ public class MemberServiceTest {
         assertThatThrownBy(() -> memberService.joinV1(username)).isInstanceOf(RuntimeException.class);
 
         // then
-        assertFalse(memberRepository.findByUsername(username).isPresent()); // rollback
-        assertTrue(logRepository.findByMessage(username).isEmpty()); // rollback
+        assertTrue(memberRepository.findByUsername(username).isEmpty());
+        assertTrue(logRepository.findByMessage(username).isEmpty());
     }
 }
